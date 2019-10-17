@@ -1,13 +1,13 @@
 #include "editor.h"
 
-void		editor_operations_insert_char(int c)
+void		op_insert_char(int c)
 {
 	if (g_editor.num_rows == g_editor.cy)
 		row_insert(g_editor.num_rows, "", 0);
 	row_ch_insert(&g_editor.row[g_editor.cy], g_editor.cx++, c);
 }
 
-void		editor_operations_insert_new_line(void)
+void		op_insert_new_line(void)
 {
 	if (!g_editor.cx) {
 		row_insert(g_editor.cy, "", 0);
@@ -24,7 +24,7 @@ void		editor_operations_insert_new_line(void)
 	g_editor.cx = 0;
 }
 
-void		editor_operations_del_char(void)
+void		op_del_char(void)
 {
 	if (g_editor.num_rows == g_editor.cy)
 		return ;
@@ -43,7 +43,7 @@ void		editor_operations_del_char(void)
 	}
 }
 
-static void	editor_operations_find_callback(char *query, int key)
+static void	op_find_callback(char *query, int key)
 {
 	static int	last_match = -1;
 	static int	direction = 1;
@@ -97,7 +97,7 @@ static void	editor_operations_find_callback(char *query, int key)
 	}
 }
 
-void		editor_operations_find(void)
+void		op_find(void)
 {
 	int const	saved_cx = g_editor.cx;
 	int const	saved_cy = g_editor.cy;
@@ -105,7 +105,7 @@ void		editor_operations_find(void)
 	int const	saved_row_off = g_editor.row_off;
 
 	char	*query = input_prompt("Search: %s (Use ESC/Arrows/Enter)",
-						editor_operations_find_callback);
+						op_find_callback);
 
 	if (query) {
 		free(query);
@@ -114,5 +114,48 @@ void		editor_operations_find(void)
 		g_editor.cy = saved_cy;
 		g_editor.col_off = saved_col_off;
 		g_editor.row_off = saved_row_off;
+	}
+}
+
+void		op_open_new_file(void)
+{
+	char	_err_op[64] = "";
+
+	if (g_editor.dirty) {
+		char	question[80];
+
+		snprintf(question, sizeof(question),
+			"Do you want to save current \'%s\' file ?(Y/n) %s",
+			g_editor.filename, "%s");
+
+		char	*answer = input_prompt(question, NULL);
+
+		if (answer) {
+			*answer = tolower(*answer);
+			if (*answer == 'y') {
+				io_save();
+				draw_refresh_screen();
+				sleep(1);
+			}
+		} else {
+			snprintf(_err_op, sizeof(_err_op), "File \'%s\' was unsaved!!!",
+				g_editor.filename);
+		}
+	}
+	char	*new_file = input_prompt("Open file: %s", NULL);
+
+	if (new_file) {
+		if (g_editor.filename && !strcmp(g_editor.filename, new_file)) {
+			set_status_msg("File \'%s\' already open.", new_file);
+		} else {
+			free_g_editor();
+			io_open(new_file);
+		}
+		free(new_file);
+
+		if (*_err_op)
+			set_status_msg(_err_op);
+	} else {
+		set_status_msg("Open file canceled.");
 	}
 }

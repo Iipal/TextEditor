@@ -23,18 +23,19 @@
 
 # include "data.h"
 
-/* editor_drawing_abuff.c */
+/* abuff.c */
 # include "abuff.h"
 
-/* editor_raw_mode.c */
+/* raw_mode.c */
 void	raw_mode_enable(void);
 void	raw_mode_disable(void);
 
-/* editor_operations.c */
-void	editor_operations_insert_char(int c);
-void	editor_operations_insert_new_line(void);
-void	editor_operations_del_char(void);
-void	editor_operations_find(void);
+/* operations.c */
+void	op_insert_char(int c);
+void	op_insert_new_line(void);
+void	op_del_char(void);
+void	op_find(void);
+void	op_open_new_file(void);
 
 /* input.c */
 char	*input_prompt(char *prompt, void (*callback)(char*, int))
@@ -53,7 +54,7 @@ void	set_status_msg(const char *fmt, ...) __nonnull((1));
 void	draw_status_bar(struct s_abuff *ab) __nonnull((1));
 void	draw_msg_bar(struct s_abuff *ab) __nonnull((1));
 
-/* drawing_row.c */
+/* row.c */
 int		row_cx_to_rx(e_row *row, int cx) __nonnull((1));
 int		row_rx_to_cx(e_row *row, int rx) __nonnull((1));
 
@@ -79,5 +80,9 @@ void	syntax_select_hl(void);
 
 /* flags.c */
 # include "flags.h"
+
+/* free.c */
+
+void	free_g_editor(void);
 
 #endif /* EDITOR_H */

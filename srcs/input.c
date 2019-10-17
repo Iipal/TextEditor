@@ -11,7 +11,8 @@ char	*input_prompt(char *prompt, void (*callback)(char*, int))
 		set_status_msg(prompt, buff);
 		draw_refresh_screen();
 
-		int c = input_key_read();
+		int	c = input_key_read();
+
 		if (DEL_KEY == c || CTRL_KEY('h') == c || BACKSPACE == c) {
 			if (buff_len)
 				buff[--buff_len] = '\0';
@@ -102,7 +103,7 @@ static inline void	input_move_cursor(int key)
 				--g_editor.cx;
 			else if (0 < g_editor.cy)
 				g_editor.cx = g_editor.row[--g_editor.cy].size;
-			break;
+			break ;
 		case ARROW_RIGHT:
 			if (r && r->size > g_editor.cx) {
 				++g_editor.cx;
@@ -110,15 +111,15 @@ static inline void	input_move_cursor(int key)
 				++g_editor.cy;
 				g_editor.cx = 0;
 			}
-			break;
+			break ;
 		case ARROW_UP:
 			if (g_editor.cy)
 				--g_editor.cy;
-			break;
+			break ;
 		case ARROW_DOWN:
 			if (g_editor.num_rows > g_editor.cy)
 				++g_editor.cy;
-			break;
+			break ;
 	}
 	r = (g_editor.num_rows <= g_editor.cy)
 		? NULL : &g_editor.row[g_editor.cy];
@@ -135,7 +136,7 @@ void	input_key_process(void)
 	int			c = input_key_read();
 
 	switch(c) {
-		case '\r': editor_operations_insert_new_line(); break;
+		case '\r': op_insert_new_line(); break ;
 
 		case CTRL_KEY('q'):
 			if (g_editor.dirty && 0 < quit_times) {
@@ -146,25 +147,26 @@ void	input_key_process(void)
 			write(STDOUT_FILENO, "\x1b[2J", 4);
 			write(STDOUT_FILENO, "\x1b[H", 3);
 			exit(0);
-			break;
+			break ;
 
-		case CTRL_KEY('s'): io_save(); break;
+		case CTRL_KEY('s'): io_save(); break ;
+		case CTRL_KEY('o'): op_open_new_file(); break ;
 
-		case HOME_KEY: g_editor.cx = 0; break;
+		case HOME_KEY: g_editor.cx = 0; break ;
 		case END_KEY:
 			if (g_editor.num_rows > g_editor.cy)
 				g_editor.cx = g_editor.row[g_editor.cy].size;
-			break;
+			break ;
 
-		case CTRL_KEY('f'): editor_operations_find(); break ;
+		case CTRL_KEY('f'): op_find(); break ;
 
 		case BACKSPACE:
 		case CTRL_KEY('h'):
 		case DEL_KEY:
 			if (DEL_KEY == c)
 				input_move_cursor(ARROW_RIGHT);
-			editor_operations_del_char();
-			break;
+			op_del_char();
+			break ;
 
 		case PAGE_UP:
 		case PAGE_DOWN: {
@@ -178,18 +180,18 @@ void	input_key_process(void)
 			int	times = g_editor.screen_rows;
 			while (times--)
 				input_move_cursor((PAGE_UP == c) ? ARROW_UP : ARROW_DOWN);
-		} break;
+		} break ;
 
 		case ARROW_UP:
 		case ARROW_LEFT:
 		case ARROW_DOWN:
-		case ARROW_RIGHT: input_move_cursor(c); break;
+		case ARROW_RIGHT: input_move_cursor(c); break ;
 
 		case CTRL_KEY('l'):
 		case '\x1b':
 			break ;
 
-		default: editor_operations_insert_char(c); break;
+		default: op_insert_char(c); break ;
 	}
 	quit_times = E_QUIT_TIMES;
 }
