@@ -5,6 +5,7 @@ static inline void	editor_init(void)
 	struct termios	tmp = g_editor.raw_termios;
 
 	bzero(&g_editor, sizeof(struct s_editor_config));
+	bzero(&g_flags, sizeof(struct s_flags));
 	g_editor.raw_termios = tmp;
 	if (!terminal_get_win_size(&g_editor.screen_rows,
 								&g_editor.screen_cols))
@@ -14,15 +15,15 @@ static inline void	editor_init(void)
 
 int					main(int argc, char *argv[])
 {
+	raw_mode_enable();
 	editor_init();
 
 	--argc; ++argv;
 	if (argc) {
-		parse_flags_in_args(argc, argv);
-		io_open(*(argv + (argc - 1)));
+		parse_flags(argc, argv);
+		if (argc > g_flags.valid_flags)
+			io_open(*(argv + g_flags.valid_flags));
 	}
-
-	raw_mode_enable();
 
 	set_status_msg(E_DEF_STATUS_MSG);
 

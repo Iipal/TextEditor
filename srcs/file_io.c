@@ -27,36 +27,42 @@ void		io_open(char *filename)
 	g_editor.dirty = 0;
 }
 
-static int	io_row_no_end_whitespaces_len(char *s)
+static int	io_row_len(int j)
 {
-	int	end = strlen(s) - 1;
+	if (IS_BIT(g_flags.b_mask, F_B_TEW)) {
+		char const *const	s = g_editor.row[j].chars;
+		int					end = g_editor.row[j].size;
 
-	while (end && s[end] && (isblank(s[end]) || isspace(s[end])))
-		--end;
-	return end;
+		while (end && s[end] && (isblank(s[end]) || isspace(s[end])))
+			--end;
+		return end;
+	}
+	return g_editor.row[j].size;
 }
 
 static char	*io_rows_to_string(int *buff_len)
 {
-	int	total_len = 0;
+	u_int8_t const	eof_bytes = IS_BIT(g_flags.b_mask, F_B_CRLF) ? 2 : 1;
+	size_t			total_len = 0;
 
 	for (int j = 0; g_editor.num_rows > j; j++)
-		if (IS_BIT(g_flags, F_BIT_TRIM_END_WHITESPACES))
-			total_len += io_row_no_end_whitespaces_len(g_editor.row[j].chars) + 1;
-		else
-			total_len += g_editor.row[j].size + 1;
+		total_len += io_row_len(j) + eof_bytes;
 	*buff_len = total_len;
 
 	char	*buff = malloc(total_len);
 	char	*ptr = buff;
 
 	for (int j = 0; g_editor.num_rows > j; j++) {
-		int	curr_line_len = IS_BIT(g_flags, F_BIT_TRIM_END_WHITESPACES)
-			? io_row_no_end_whitespaces_len(g_editor.row[j].chars)
-			: g_editor.row[j].size;
-		memcpy(ptr, g_editor.row[j].chars, curr_line_len);
-		ptr += curr_line_len;
-		*ptr++ = '\n';
+		int const	row_len = io_row_len(j);
+
+		memcpy(ptr, g_editor.row[j].chars, row_len);
+		ptr += row_len;
+		if (IS_BIT(g_flags.b_mask, F_B_CRLF)) {
+			*ptr++ = '\r';
+			*ptr++ = '\n';
+		} else {
+			*ptr++ = '\n';
+		}
 	}
 	return buff;
 }
@@ -73,7 +79,7 @@ void		io_save(void)
 		syntax_select_hl();
 	}
 
-	int		len;
+	int		len = 0;
 	char	*buff = io_rows_to_string(&len);
 	int		fd = open(g_editor.filename, O_RDWR | O_CREAT, 0644);
 

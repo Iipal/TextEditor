@@ -30,9 +30,8 @@ int			row_rx_to_cx(e_row *row, int rx)
 void		row_update(e_row *row)
 {
 	int	tabs = 0;
-	int	j;
 
-	for (j = 0; row->size > j; j++)
+	for (int j = 0; row->size > j; j++)
 		if ('\t' == row->chars[j])
 			++tabs;
 	free(row->render);
@@ -40,7 +39,7 @@ void		row_update(e_row *row)
 
 	int	i = 0;
 
-	for (j = 0; row->size > j; j++)
+	for (int j = 0; row->size > j; j++)
 		if ('\t' == row->chars[j]) {
 			row->render[i++] = ' ';
 			while (i % E_TAB_STOP)
@@ -63,15 +62,9 @@ void		row_insert(int at, char *s, size_t len)
 		sizeof(e_row) * (g_editor.num_rows - at));
 	for (int j = at + 1; g_editor.num_rows >= j; j++)
 		++g_editor.row[j].idx;
-	g_editor.row[at].idx = at;
-	g_editor.row[at].size = len;
-	g_editor.row[at].chars = malloc(len + 1);
+	g_editor.row[at] = (e_row){at, len, 0, malloc(len + 1), NULL, NULL, 0};
 	memcpy(g_editor.row[at].chars, s, len);
 	g_editor.row[at].chars[len] = '\0';
-	g_editor.row[at].r_size = 0;
-	g_editor.row[at].render = NULL;
-	g_editor.row[at].hl = NULL;
-	g_editor.row[at].hl_open_comment = 0;
 	row_update(&g_editor.row[at]);
 	++g_editor.num_rows;
 	++g_editor.dirty;
@@ -108,21 +101,21 @@ void		row_ch_insert(e_row *row, int at, int c)
 	++g_editor.dirty;
 }
 
+void		row_ch_del(e_row *row, int at)
+{
+	if (0 > at || row->size <= at)
+		return ;
+	memmove(&row->chars[at], &row->chars[at + 1], row->size-- - at);
+	row_update(row);
+	++g_editor.dirty;
+}
+
 void		row_append_string(e_row *row, char *s, size_t len)
 {
 	row->chars = realloc(row->chars, row->size + len + 1);
 	memcpy(&row->chars[row->size], s, len);
 	row->size += len;
 	row->chars[row->size] = '\0';
-	row_update(row);
-	++g_editor.dirty;
-}
-
-void		row_ch_del(e_row *row, int at)
-{
-	if (0 > at || row->size <= at)
-		return ;
-	memmove(&row->chars[at], &row->chars[at + 1], row->size-- - at);
 	row_update(row);
 	++g_editor.dirty;
 }
