@@ -12,6 +12,7 @@
 # include <stdarg.h>
 # include <stdbool.h>
 # include <ctype.h>
+# include <err.h>
 # include <errno.h>
 # include <sys/ioctl.h>
 # include <sys/types.h>
@@ -21,14 +22,6 @@
 # define E_DEF_STATUS_MSG "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find"
 
 # include "data.h"
-
-static inline void	die(const char *s)
-{
-	write(STDOUT_FILENO, "\x1b[2J", 4);
-	write(STDOUT_FILENO, "\x1b[H", 3);
-	perror(s);
-	exit(1);
-}
 
 /* editor_drawing_abuff.c */
 # include "abuff.h"
@@ -55,8 +48,10 @@ bool	terminal_get_win_size(int *rows, int *cols) __nonnull((1,2));
 /* drawing.c */
 void	draw_refresh_screen(void);
 
-/* status_bar.c */
+/* drawing_status_bar.c */
 void	set_status_msg(const char *fmt, ...) __nonnull((1));
+void	draw_status_bar(struct s_abuff *ab) __nonnull((1));
+void	draw_msg_bar(struct s_abuff *ab) __nonnull((1));
 
 /* drawing_row.c */
 int		row_cx_to_rx(e_row *row, int cx) __nonnull((1));
@@ -81,5 +76,8 @@ void	io_save(void);
 void	syntax_update(e_row *row) __nonnull((1));
 int		syntax_to_clr(int hl);
 void	syntax_select_hl(void);
+
+/* flags.c */
+# include "flags.h"
 
 #endif /* EDITOR_H */

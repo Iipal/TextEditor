@@ -48,7 +48,7 @@ int		input_key_read(void)
 
 	while (1 != (nread = read(STDIN_FILENO, &c, 1)))
 		if (-1 == nread && EAGAIN != errno)
-			die("read");
+			err(1, "read");
 	if ('\x1b' == c) {
 		char	seq[3];
 
