@@ -1,6 +1,6 @@
 #include "editor.h"
 
-char	*input_prompt(char *prompt, void (*callback)(char*, int))
+char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
 {
 	size_t	buff_size = 128UL;
 	char	*buff = malloc(buff_size);
@@ -19,14 +19,14 @@ char	*input_prompt(char *prompt, void (*callback)(char*, int))
 		} else if ('\x1b' == c) {
 			set_status_msg("");
 			if (callback)
-				callback(buff, c);
+				callback(buff, &buff_len, c);
 			free(buff);
 			return NULL;
 		} else if ('\r' == c) {
 			if (buff_len) {
 				set_status_msg("");
 				if (callback)
-					callback(buff, c);
+					callback(buff, &buff_len, c);
 				return buff;
 			}
 		} else if (!iscntrl(c) && 128 > c) {
@@ -38,7 +38,7 @@ char	*input_prompt(char *prompt, void (*callback)(char*, int))
 			buff[buff_len] = '\0';
 		}
 		if (callback)
-			callback(buff, c);
+			callback(buff, &buff_len, c);
 	}
 }
 
@@ -150,7 +150,7 @@ void	input_key_process(void)
 			break ;
 
 		case CTRL_KEY('s'): io_save(); break ;
-		case CTRL_KEY('o'): op_open_new_file(); break ;
+		case CTRL_KEY('o'): op_open_file(); break ;
 
 		case HOME_KEY: g_editor.cx = 0; break ;
 		case END_KEY:

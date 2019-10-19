@@ -24,6 +24,4 @@ struct s_flags	g_flags;
 # define F_TEW  "tew"
 # define F_CRLF "crlf"
 
-void	parse_flags(int argc, char *argv[]);
-
 #endif /* FLAGS_H */

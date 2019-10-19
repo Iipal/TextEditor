@@ -16,10 +16,14 @@
 # include <errno.h>
 # include <sys/ioctl.h>
 # include <sys/types.h>
+# include <stddef.h>
+# include <dirent.h>
+# include <pwd.h>
 
 # define E_VERSION "0.0.1"
 
-# define E_DEF_STATUS_MSG "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find"
+# define E_DEF_STATUS_MSG "HELP: Ctrl-S = save | Ctrl-Q = quit " \
+	"| Ctrl-F = find | Ctrl-O = open"
 
 # include "data.h"
 
@@ -35,10 +39,10 @@ void	op_insert_char(int c);
 void	op_insert_new_line(void);
 void	op_del_char(void);
 void	op_find(void);
-void	op_open_new_file(void);
+void	op_open_file(void);
 
 /* input.c */
-char	*input_prompt(char *prompt, void (*callback)(char*, int))
+char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
 			__nonnull((1));
 int		input_key_read(void);
 void	input_key_process(void);
@@ -81,8 +85,9 @@ void	syntax_select_hl(void);
 /* flags.c */
 # include "flags.h"
 
-/* free.c */
+void	parse_flags(int argc, char *argv[]);
 
+/* free.c */
 void	free_g_editor(void);
 
 #endif /* EDITOR_H */

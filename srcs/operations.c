@@ -43,7 +43,12 @@ void		op_del_char(void)
 	}
 }
 
-static void	op_find_callback(char *query, int key)
+/*
+**
+** Find string in file functions:
+**
+*/
+static void	op_find_callback(char *query, size_t *query_len, int key)
 {
 	static int	last_match = -1;
 	static int	direction = 1;
@@ -95,6 +100,7 @@ static void	op_find_callback(char *query, int key)
 			break ;
 		}
 	}
+	(void)query_len;
 }
 
 void		op_find(void)
@@ -117,10 +123,146 @@ void		op_find(void)
 	}
 }
 
-void		op_open_new_file(void)
-{
-	char	_err_op[64] = "";
+/*
+**
+** Open file functions:
+**
+*/
+typedef struct	s_matches_helper {
+	char	*filename;
+	bool	match;
+}				t_mh;
 
+static char	*op_of_callback_full_path(char *path, size_t *path_len)
+{
+	if (path) {
+		if ('~' != *path)
+			return path;
+
+		char			*path_dup = strdup(path);
+		struct passwd	*pw = getpwuid(getuid());
+
+		if (!pw)
+			err(1, "getpwuid(getuid())");
+		if (path_len)
+			*path_len += strlen(pw->pw_dir);
+		strcpy(path, pw->pw_dir);
+		path[strlen(path)] = '/';
+		strcpy(path + strlen(path), path_dup + 1);
+		free(path_dup);
+	}
+	return path;
+}
+
+static void	*op_of_callback_free_matches(t_mh *matches,
+							size_t *const matches_len)
+{
+	if (matches) {
+		for (size_t i = 0UL; *matches_len > i; i++)
+			free(matches[i].filename);
+		free(matches);
+	}
+	return (void*)(*matches_len = 0UL);
+}
+
+static int op_of_callback_match_cmp(void const *_a, void const *_b)
+{
+	t_mh const	*a = _a;
+	t_mh const	*b = _b;
+
+	return b->match - a->match;
+}
+
+static void	op_open_file_callback(char *path, size_t *path_len, int key)
+{
+	static char		*last_to_match;
+	static char		*last_dir_path;
+	static t_mh		*matches;
+	static size_t	matches_len;
+	static size_t	at_match;
+	static size_t	matches_founded;
+
+	if ('\r' == key || '\x1b' == key) {
+		matches = op_of_callback_free_matches(matches, &matches_len);
+		if (last_dir_path)
+			free(last_dir_path);
+		return ;
+	}
+	if (!path || (path && !*path))
+		return ;
+	if ('~' == *path)
+		path = op_of_callback_full_path(path, path_len);
+
+	DIR				*dr = NULL;
+	struct dirent	*de = NULL;
+	char			*dir_path = NULL;
+	char			*to_match = NULL;
+	size_t			to_match_len = 0UL;
+
+	if (!to_match) {
+		to_match = strrchr(path, '/');
+		if (!to_match) {
+			matches = op_of_callback_free_matches(matches, &matches_len);
+			last_to_match = NULL;
+			return ;
+		} else if (!*(++to_match)) {
+			last_to_match = NULL;
+			return ;
+		}
+	}
+	to_match_len = strlen(to_match);
+	dir_path = strndup(path, to_match - path);
+	if (!to_match_len || !dir_path || (dir_path && !*dir_path))
+		return ;
+	if (!last_dir_path || (last_dir_path && strcmp(dir_path, last_dir_path))) {
+		at_match = 0UL;
+		matches = op_of_callback_free_matches(matches, &matches_len);
+		dr = opendir(dir_path);
+		if (!dr)
+			return ;
+		while ((de = readdir(dr))) {
+			if (!matches)
+				matches = calloc(matches_len + 1, sizeof(t_mh));
+			else
+				matches = realloc(matches, sizeof(t_mh) * (matches_len + 1));
+			matches[matches_len].filename = strdup(de->d_name);
+			matches[matches_len++].match = false;
+		}
+		closedir(dr);
+	}
+	if (matches_len && '\t' == key) {
+		if (!last_to_match
+		|| (last_to_match && strcmp(to_match, last_to_match))) {
+			for (size_t i = 0UL; matches_len > i; i++) {
+				size_t	match = 0UL;
+
+				matches[i].match = false;
+				if (strlen(matches[i].filename) < to_match_len)
+					continue ;
+				while (to_match[match] && matches[i].filename[match]
+					&& to_match[match] == matches[i].filename[match])
+					++match;
+				if (match == to_match_len) {
+					++matches_founded;
+					matches[i].match = true;
+				}
+			}
+			qsort(matches, matches_len, sizeof(t_mh), op_of_callback_match_cmp);
+			at_match = 0UL;
+			last_to_match = to_match;
+		}
+		if (matches_founded) {
+			if (at_match == matches_founded || !matches[at_match].match)
+				at_match = 0UL;
+			strcpy(to_match, matches[at_match].filename);
+			*path_len += strlen(matches[at_match++].filename) - to_match_len;
+		}
+	}
+	last_dir_path = dir_path;
+}
+
+void		op_open_file(void)
+{
 	if (g_editor.dirty) {
 		char	question[80];
 
@@ -137,24 +279,19 @@ void		op_open_new_file(void)
 				draw_refresh_screen();
 				sleep(1);
 			}
-		} else {
-			snprintf(_err_op, sizeof(_err_op), "File \'%s\' was unsaved!!!",
-				g_editor.filename);
 		}
 	}
-	char	*new_file = input_prompt("Open file: %s", NULL);
+	char	*path = input_prompt("Open file: %s", op_open_file_callback);
 
-	if (new_file) {
-		if (g_editor.filename && !strcmp(g_editor.filename, new_file)) {
-			set_status_msg("File \'%s\' already open.", new_file);
+	if (path) {
+		path = op_of_callback_full_path(path, NULL);
+		if (g_editor.filename && !strcmp(g_editor.filename, path)) {
+			set_status_msg("File \'%s\' already open.", path);
 		} else {
 			free_g_editor();
-			io_open(new_file);
+			io_open(path);
 		}
-		free(new_file);
-
-		if (*_err_op)
-			set_status_msg(_err_op);
+		free(path);
 	} else {
 		set_status_msg("Open file canceled.");
 	}
