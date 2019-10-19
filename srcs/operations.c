@@ -264,23 +264,17 @@ static void	op_open_file_callback(char *path, size_t *path_len, int key)
 void		op_open_file(void)
 {
 	if (g_editor.dirty) {
-		char	question[80];
+		bool const	is_save = input_ask_question((char*[]){"yes", "y", NULL},
+		NULL, "Do you want to save current \'%s\' file ?(Y/n)",
+		g_editor.filename);
 
-		snprintf(question, sizeof(question),
-			"Do you want to save current \'%s\' file ?(Y/n) %s",
-			g_editor.filename, "%s");
-
-		char	*answer = input_prompt(question, NULL);
-
-		if (answer) {
-			*answer = tolower(*answer);
-			if (*answer == 'y') {
-				io_save();
-				draw_refresh_screen();
-				sleep(1);
-			}
+		if (is_save) {
+			io_save();
+			draw_refresh_screen();
+			sleep(1);
 		}
 	}
+
 	char	*path = input_prompt("Open file: %s", op_open_file_callback);
 
 	if (path) {

@@ -1,5 +1,34 @@
 #include "editor.h"
 
+bool	input_ask_question(char *valid_answers[],
+			void (*callback)(char*, size_t*, int),
+			char *question_fmt, ...)
+{
+	char	question[128 + 4UL];
+	{
+		int		question_len = 0;
+		va_list	ap;
+
+		va_start(ap, question_fmt);
+		question_len = vsnprintf(question, sizeof(question),
+									question_fmt, ap);
+		strncpy(question + question_len, " %s", 4UL);
+		va_end(ap);
+	}
+
+	char	*answer = input_prompt(question, callback);
+
+	if (!answer)
+		return false;
+	for (size_t i = 0UL; valid_answers[i]; i++)
+		if (!strcasecmp(valid_answers[i], answer)) {
+			free(answer);
+			return true;
+		}
+	free(answer);
+	return false;
+}
+
 char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
 {
 	size_t	buff_size = 128UL;

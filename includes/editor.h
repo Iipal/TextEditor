@@ -42,6 +42,9 @@ void	op_find(void);
 void	op_open_file(void);
 
 /* input.c */
+bool	input_ask_question(char *valid_answers[],
+			void (*callback)(char*, size_t*, int),
+			char *question_fmt, ...) __nonnull((1, 3));
 char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
 			__nonnull((1));
 int		input_key_read(void);
