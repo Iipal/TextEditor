@@ -1,20 +1,17 @@
 #include "editor.h"
 
-bool	input_ask_question(char *valid_answers[],
-			void (*callback)(char*, size_t*, int),
-			char *question_fmt, ...)
+bool		input_ask_question(char *valid_answers[],
+				void (*callback)(char*, size_t*, int),
+				char *question_fmt, ...)
 {
-	char	question[128 + 4UL];
-	{
-		int		question_len = 0;
-		va_list	ap;
+	char	question[128 + 4];
+	int		question_len = 0;
+	va_list	ap;
 
-		va_start(ap, question_fmt);
-		question_len = vsnprintf(question, sizeof(question),
-									question_fmt, ap);
-		strncpy(question + question_len, " %s", 4UL);
-		va_end(ap);
-	}
+	va_start(ap, question_fmt);
+	question_len = vsnprintf(question, sizeof(question), question_fmt, ap);
+	strncpy(question + question_len, " %s", 4UL);
+	va_end(ap);
 
 	char	*answer = input_prompt(question, callback);
 
@@ -29,7 +26,7 @@ bool	input_ask_question(char *valid_answers[],
 	return false;
 }
 
-char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
+char		*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
 {
 	size_t	buff_size = 128UL;
 	char	*buff = malloc(buff_size);
@@ -71,7 +68,7 @@ char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
 	}
 }
 
-int		input_key_read(void)
+int			input_key_read(void)
 {
 	int		nread;
 	char	c;
@@ -121,7 +118,7 @@ int		input_key_read(void)
 	return c;
 }
 
-static inline void	input_move_cursor(int key)
+static void	input_move_cursor(int key)
 {
 	e_row	*r = (g_editor.num_rows <= g_editor.cy)
 				? NULL : &g_editor.row[g_editor.cy];
@@ -159,7 +156,7 @@ static inline void	input_move_cursor(int key)
 		g_editor.cx = r_len;
 }
 
-void	input_key_process(void)
+void		input_key_process(void)
 {
 	static int	quit_times = E_QUIT_TIMES;
 	int			c = input_key_read();

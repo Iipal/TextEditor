@@ -1,6 +1,6 @@
 #include "editor.h"
 
-void		op_insert_char(int c)
+inline void	op_insert_char(int c)
 {
 	if (g_editor.num_rows == g_editor.cy)
 		row_insert(g_editor.num_rows, "", 0);
@@ -103,7 +103,7 @@ static void	op_find_callback(char *query, size_t *query_len, int key)
 	(void)query_len;
 }
 
-void		op_find(void)
+inline void	op_find(void)
 {
 	int const	saved_cx = g_editor.cx;
 	int const	saved_cy = g_editor.cy;
@@ -128,12 +128,8 @@ void		op_find(void)
 ** Open file functions:
 **
 */
-typedef struct	s_matches_helper {
-	char	*filename;
-	bool	match;
-}				t_mh;
 
-static char	*op_of_callback_full_path(char *path, size_t *path_len)
+static char	*op_full_path(char *path, size_t *path_len)
 {
 	if (path) {
 		if ('~' != *path)
@@ -154,111 +150,148 @@ static char	*op_of_callback_full_path(char *path, size_t *path_len)
 	return path;
 }
 
-static void	*op_of_callback_free_matches(t_mh *matches,
-							size_t *const matches_len)
+struct	s_matches {
+	char	*filename;
+	bool	match;
+};
+
+struct s_matches	*g_matches = NULL;
+size_t				g_matches_len = 0UL;
+
+size_t				g_matches_founded = 0UL;
+size_t				g_at_match = 0UL;
+
+char				*g_last_to_match = NULL;
+char				*g_last_to_match_dir = NULL;
+
+static void	*op_ofc_free_matches(void)
 {
-	if (matches) {
-		for (size_t i = 0UL; *matches_len > i; i++)
-			free(matches[i].filename);
-		free(matches);
+	if (g_matches) {
+		for (size_t i = 0UL; g_matches_len > i; i++)
+			free(g_matches[i].filename);
+		free(g_matches);
 	}
-	return (void*)(*matches_len = 0UL);
+	return (void*)(g_matches_len = 0UL);
 }
 
-static int op_of_callback_match_cmp(void const *_a, void const *_b)
+static int op_ofc_match_cmp(void const *a, void const *b)
 {
-	t_mh const	*a = _a;
-	t_mh const	*b = _b;
-
-	return b->match - a->match;
+	return ((struct s_matches const*)b)->match
+		- ((struct s_matches const*)a)->match;
 }
 
 static void	op_open_file_callback(char *path, size_t *path_len, int key)
 {
-	static char		*last_to_match;
-	static char		*last_dir_path;
-	static t_mh		*matches;
-	static size_t	matches_len;
-	static size_t	at_match;
-	static size_t	matches_founded;
-
 	if ('\r' == key || '\x1b' == key) {
-		matches = op_of_callback_free_matches(matches, &matches_len);
-		if (last_dir_path)
-			free(last_dir_path);
+		g_matches = op_ofc_free_matches();
+		if (g_last_to_match)
+			free(g_last_to_match);
+		if (g_last_to_match_dir)
+			free(g_last_to_match_dir);
 		return ;
 	}
-	if (!path || (path && !*path))
+	path = op_full_path(path, path_len);
+	if (!path)
 		return ;
-	if ('~' == *path)
-		path = op_of_callback_full_path(path, path_len);
 
 	DIR				*dr = NULL;
 	struct dirent	*de = NULL;
-	char			*dir_path = NULL;
 	char			*to_match = NULL;
+	char			*to_match_dir = NULL;
 	size_t			to_match_len = 0UL;
 
+	to_match = strrchr(path, '/');
 	if (!to_match) {
-		to_match = strrchr(path, '/');
-		if (!to_match) {
-			matches = op_of_callback_free_matches(matches, &matches_len);
-			last_to_match = NULL;
-			return ;
-		} else if (!*(++to_match)) {
-			last_to_match = NULL;
-			return ;
-		}
+		to_match = path;
+		to_match_dir = ".";
+	} else {
+		++to_match;
 	}
 	to_match_len = strlen(to_match);
-	dir_path = strndup(path, to_match - path);
-	if (!to_match_len || !dir_path || (dir_path && !*dir_path))
-		return ;
-	if (!last_dir_path || (last_dir_path && strcmp(dir_path, last_dir_path))) {
-		at_match = 0UL;
-		matches = op_of_callback_free_matches(matches, &matches_len);
-		dr = opendir(dir_path);
+	if (!to_match_dir && to_match - path)
+		to_match_dir = strndup(path, to_match - path);
+	else
+		to_match_dir = ".";
+	if (!g_last_to_match_dir || (g_last_to_match_dir
+		&& strcmp(to_match_dir, g_last_to_match_dir))) {
+		g_at_match = 0UL;
+		g_matches = op_ofc_free_matches();
+		dr = opendir(to_match_dir);
 		if (!dr)
 			return ;
 		while ((de = readdir(dr))) {
-			if (!matches)
-				matches = calloc(matches_len + 1, sizeof(t_mh));
+			if (!g_matches)
+				g_matches = calloc(g_matches_len + 1,
+					sizeof(struct s_matches));
 			else
-				matches = realloc(matches, sizeof(t_mh) * (matches_len + 1));
-			matches[matches_len].filename = strdup(de->d_name);
-			matches[matches_len++].match = false;
+				g_matches = realloc(g_matches,
+					sizeof(struct s_matches) * (g_matches_len + 1));
+			g_matches[g_matches_len++].filename = strdup(de->d_name);
 		}
+		if (g_last_to_match_dir) {
+			free(g_last_to_match_dir);
+			g_last_to_match_dir = NULL;
+		}
+		g_last_to_match_dir = strdup(to_match_dir);
 		closedir(dr);
 	}
-	if (matches_len && '\t' == key) {
-		if (!last_to_match
-		|| (last_to_match && strcmp(to_match, last_to_match))) {
-			for (size_t i = 0UL; matches_len > i; i++) {
+	if (g_matches_len && '\t' == key) {
+		if (!g_last_to_match_dir
+		|| (g_last_to_match_dir && strcmp(to_match, g_last_to_match_dir))) {
+			g_matches_founded = 0UL;
+			for (size_t i = 0UL; g_matches_len > i; i++) {
 				size_t	match = 0UL;
 
-				matches[i].match = false;
-				if (strlen(matches[i].filename) < to_match_len)
+				g_matches[i].match = false;
+				if (strlen(g_matches[i].filename) < to_match_len)
 					continue ;
-				while (to_match[match] && matches[i].filename[match]
-					&& to_match[match] == matches[i].filename[match])
+				while (to_match[match]
+					&& to_match[match] == g_matches[i].filename[match])
 					++match;
-				if (match == to_match_len) {
-					++matches_founded;
-					matches[i].match = true;
+				if (to_match_len && match == to_match_len) {
+					++g_matches_founded;
+					g_matches[i].match = true;
 				}
 			}
-			qsort(matches, matches_len, sizeof(t_mh), op_of_callback_match_cmp);
-			at_match = 0UL;
-			last_to_match = to_match;
+			qsort(g_matches, g_matches_len,
+				sizeof(struct s_matches), op_ofc_match_cmp);
+			g_at_match = 0UL;
+			if (g_last_to_match) {
+				free(g_last_to_match);
+				g_last_to_match = NULL;
+			}
+			g_last_to_match = strdup(to_match);
 		}
-		if (matches_founded) {
-			if (at_match == matches_founded || !matches[at_match].match)
-				at_match = 0UL;
-			strcpy(to_match, matches[at_match].filename);
-			*path_len += strlen(matches[at_match++].filename) - to_match_len;
+		if (g_matches_founded) {
+			if (g_at_match == g_matches_founded)
+				g_at_match = 0UL;
+			strcpy(to_match, g_matches[g_at_match].filename);
+			*path_len += strlen(g_matches[g_at_match].filename) - to_match_len;
+			++g_at_match;
 		}
 	}
-	last_dir_path = dir_path;
+	/* if (10 < 2 && g_matches_len && CTRL_KEY('\t') == key) {
+		char	*all_matches = NULL;
+		size_t	all_matches_len = 0UL;
+		size_t	matches_to_print = 0UL;
+
+		for (matches_to_print = 0UL;
+			g_matches_len > matches_to_print;
+			matches_to_print++) {
+			all_matches_len += strlen(g_matches[matches_to_print].filename);
+			if (all_matches_len >= (size_t)g_editor.screen_cols - 4)
+				break ;
+		}
+		all_matches = calloc(all_matches_len, sizeof(char));
+		for (size_t i = 0UL; matches_to_print + 1 > i; i++) {
+			strcpy(all_matches + strlen(all_matches), g_matches[i].filename);
+			all_matches[strlen(all_matches)] = ' ';
+		}
+		strcpy(all_matches + strlen(all_matches), "...");
+		set_status_msg(all_matches);
+		draw_refresh_screen();
+		sleep(1);
+	} */
 }
 
 void		op_open_file(void)
@@ -278,7 +311,7 @@ void		op_open_file(void)
 	char	*path = input_prompt("Open file: %s", op_open_file_callback);
 
 	if (path) {
-		path = op_of_callback_full_path(path, NULL);
+		path = op_full_path(path, NULL);
 		if (g_editor.filename && !strcmp(g_editor.filename, path)) {
 			set_status_msg("File \'%s\' already open.", path);
 		} else {

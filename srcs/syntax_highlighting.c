@@ -130,7 +130,7 @@ void				syntax_update(e_row *row)
 		syntax_update(&g_editor.row[row->idx + 1]);
 }
 
-int		syntax_to_clr(int hl)
+inline int			syntax_to_clr(int hl)
 {
 	switch(hl) {
 		case HL_COMMENT:
@@ -144,7 +144,7 @@ int		syntax_to_clr(int hl)
 	}
 }
 
-void	syntax_select_hl(void)
+void				syntax_select_hl(void)
 {
 	g_editor.syntax = NULL;
 	if (!g_editor.filename)

@@ -70,7 +70,7 @@ void		row_insert(int at, char *s, size_t len)
 	++g_editor.dirty;
 }
 
-void		row_free(e_row *row)
+inline void	row_free(e_row *row)
 {
 	free(row->render);
 	free(row->chars);
@@ -90,7 +90,7 @@ void		row_del(int at)
 	++g_editor.dirty;
 }
 
-void		row_ch_insert(e_row *row, int at, int c)
+inline void	row_ch_insert(e_row *row, int at, int c)
 {
 	if (0 > at || row->size < at)
 		at = row->size;
@@ -101,7 +101,7 @@ void		row_ch_insert(e_row *row, int at, int c)
 	++g_editor.dirty;
 }
 
-void		row_ch_del(e_row *row, int at)
+inline void	row_ch_del(e_row *row, int at)
 {
 	if (0 > at || row->size <= at)
 		return ;
@@ -110,7 +110,7 @@ void		row_ch_del(e_row *row, int at)
 	++g_editor.dirty;
 }
 
-void		row_append_string(e_row *row, char *s, size_t len)
+inline void	row_append_string(e_row *row, char *s, size_t len)
 {
 	row->chars = realloc(row->chars, row->size + len + 1);
 	memcpy(&row->chars[row->size], s, len);

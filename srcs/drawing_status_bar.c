@@ -1,6 +1,6 @@
 #include "editor.h"
 
-void	set_status_msg(const char *fmt, ...)
+inline void	set_status_msg(const char *fmt, ...)
 {
 	va_list	ap;
 
@@ -39,7 +39,7 @@ void	draw_status_bar(struct s_abuff *ab)
 	ab_append(ab, "\r\n", 2);
 }
 
-void	draw_msg_bar(struct s_abuff *ab)
+inline void	draw_msg_bar(struct s_abuff *ab)
 {
 	int	msg_len = strlen(g_editor.status_msg);
 

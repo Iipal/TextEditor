@@ -25,72 +25,72 @@
 # define E_DEF_STATUS_MSG "HELP: Ctrl-S = save | Ctrl-Q = quit " \
 	"| Ctrl-F = find | Ctrl-O = open"
 
-# include "data.h"
+# include "editor_config_data.h"
 
 /* abuff.c */
 # include "abuff.h"
 
 /* raw_mode.c */
-void	raw_mode_enable(void);
-void	raw_mode_disable(void);
+void		raw_mode_enable(void);
+void		raw_mode_disable(void);
 
 /* operations.c */
-void	op_insert_char(int c);
-void	op_insert_new_line(void);
-void	op_del_char(void);
-void	op_find(void);
-void	op_open_file(void);
+extern void	op_insert_char(int c);
+void		op_insert_new_line(void);
+void		op_del_char(void);
+extern void	op_find(void);
+void		op_open_file(void);
 
 /* input.c */
-bool	input_ask_question(char *valid_answers[],
-			void (*callback)(char*, size_t*, int),
-			char *question_fmt, ...) __nonnull((1, 3));
-char	*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
-			__nonnull((1));
-int		input_key_read(void);
-void	input_key_process(void);
+bool		input_ask_question(char *valid_answers[],
+				void (*callback)(char*, size_t*, int),
+				char *question_fmt, ...) __nonnull((1, 3));
+char		*input_prompt(char *prompt, void (*callback)(char*, size_t*, int))
+				__nonnull((1));
+int			input_key_read(void);
+void		input_key_process(void);
 
 /* terminal_win_state.c */
-bool	terminal_get_win_size(int *rows, int *cols) __nonnull((1,2));
+bool		terminal_get_win_size(int *rows, int *cols) __nonnull((1,2));
 
 /* drawing.c */
-void	draw_refresh_screen(void);
+void		draw_refresh_screen(void);
 
 /* drawing_status_bar.c */
-void	set_status_msg(const char *fmt, ...) __nonnull((1));
-void	draw_status_bar(struct s_abuff *ab) __nonnull((1));
-void	draw_msg_bar(struct s_abuff *ab) __nonnull((1));
+extern void	set_status_msg(const char *fmt, ...) __nonnull((1));
+void		draw_status_bar(struct s_abuff *ab) __nonnull((1));
+extern void	draw_msg_bar(struct s_abuff *ab) __nonnull((1));
 
 /* row.c */
-int		row_cx_to_rx(e_row *row, int cx) __nonnull((1));
-int		row_rx_to_cx(e_row *row, int rx) __nonnull((1));
+int			row_cx_to_rx(e_row *row, int cx) __nonnull((1));
+int			row_rx_to_cx(e_row *row, int rx) __nonnull((1));
 
-void	row_update(e_row *row) __nonnull((1));
-void	row_insert(int at, char *s, size_t len) __nonnull((2));
-void	row_append_string(e_row *row, char *s, size_t len)
-			__nonnull((1,2));
-void	row_ch_insert(e_row *row, int at, int c) __nonnull((1));
-void	row_ch_del(e_row *row, int at) __nonnull((1));
-void	row_free(e_row *row) __nonnull((1));
-void	row_del(int at);
+void		row_update(e_row *row) __nonnull((1));
+void		row_insert(int at, char *s, size_t len) __nonnull((2));
+extern void	row_append_string(e_row *row, char *s, size_t len)
+				__nonnull((1,2));
+extern void	row_free(e_row *row) __nonnull((1));
+void		row_del(int at);
+extern void	row_ch_insert(e_row *row, int at, int c) __nonnull((1));
+extern void	row_ch_del(e_row *row, int at) __nonnull((1));
 
 /* file_io.c */
-void	io_open(char *filename) __nonnull((1));
-void	io_save(void);
+void		io_open(char *filename) __nonnull((1));
+void		io_save(void);
 
 /* syntax_highlighting.c */
 # include "syntax.h"
 
-void	syntax_update(e_row *row) __nonnull((1));
-int		syntax_to_clr(int hl);
-void	syntax_select_hl(void);
+void		syntax_update(e_row *row) __nonnull((1));
+extern int	syntax_to_clr(int hl);
+void		syntax_select_hl(void);
 
 /* flags.c */
 # include "flags.h"
 
-void	parse_flags(int argc, char *argv[]);
+void		parse_flags(int argc, char *argv[]);
 
 /* free.c */
-void	free_g_editor(void);
+void		free_g_editor(void);
 
 #endif /* EDITOR_H */
